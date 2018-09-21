@@ -296,6 +296,9 @@ function love.draw()
     -- let's draw some ground
     love.graphics.setColor(0, 255, 0, 255)
     love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH, 150)
+    -- test position
+    love.graphics.setColor(255, 255, 0, 255)
+    love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH * 1000, FORTY_FOUR)
 
     if not allOver then
         if not allClear or supremeCombo then
@@ -312,9 +315,9 @@ function love.draw()
                 love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
 
                 -- let's draw our heros shots
-                love.graphics.setColor(255, 255, 255, 255)
+                love.graphics.setColor(1, 0, 0)
                 for i, v in ipairs(hero.shots) do
-                    love.graphics.rectangle("fill", v.x, v.y, 2, 5)
+                    love.graphics.rectangle("fill", v.x, v.y, 148, FORTY_FOUR)
                 end
             else
                 -- perform supreme animation
@@ -356,12 +359,12 @@ function love.draw()
 end
 
 function shoot()
-    if #hero.shots >= 5 then
-        return
-    end
+    --if #hero.shots >= 5 then
+    --    return
+    --end
     local shot = {}
-    shot.x = hero.x + hero.width / 2
-    shot.y = hero.y
+    shot.x = geezers.body:getX()
+    shot.y = geezers.body:getY()
     table.insert(hero.shots, shot)
 end
 
