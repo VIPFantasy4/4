@@ -10,6 +10,8 @@
 --playerImgL3 = nil
 --playerImgL4 = nil
 
+local FORTY_FOUR = 44
+
 local WINDOW_WIDTH = 800
 
 local SUPREME_COMBO_COMMAND = {}
@@ -27,10 +29,35 @@ local DEFAULT_ORIENTATION = 'L'
 
 local FREAK_COEFFICIENT = .07
 
+local X_GRAVITY = 0
+local Y_GRAVITY = 3000
+
+local JUMP_LINEAR_VELOCITY = -500
+
 function love.load(arg)
     --if arg and arg[#arg] == "-debug" then
     --    require("mobdebug").start()
     --end
+
+    world = love.physics.newWorld(X_GRAVITY, Y_GRAVITY)
+    world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+    love.physics.setMeter(10)
+
+    ground = {}
+    ground.body = love.physics.newBody(world, 0, 465)
+    ground.shape = love.physics.newRectangleShape(WINDOW_WIDTH * 1000, FORTY_FOUR)
+    ground.fixture = love.physics.newFixture(ground.body, ground.shape)
+    ground.fixture:setRestitution(0)
+    ground.fixture:setUserData('ground')
+
+    geezers = {}
+    geezers.body = love.physics.newBody(world, 300, 0, 'dynamic')
+    geezers.shape = love.physics.newRectangleShape(148, FORTY_FOUR)
+    geezers.fixture = love.physics.newFixture(geezers.body, geezers.shape)
+    geezers.fixture:setUserData('geezers')
+
+    isCollided = false
+
     hero = {} -- new table for the hero
     hero.x = 300 -- x,y coordinates of the hero
     hero.y = 450
@@ -68,6 +95,8 @@ function love.load(arg)
     orientation = DEFAULT_ORIENTATION
     border = WINDOW_WIDTH - playerImgR1:getWidth()
 
+    jump = false
+
     quit = true
     allClear = false
     allOver = false
@@ -102,12 +131,16 @@ function love.keypressed(k)
     if k == 'escape' then
         love.event.push('quit') -- Quit the game.
     end
+
+    if k == 'up' and isCollided then
+        jump = true
+    end
 end
 
 function love.keyreleased(key)
     -- in v0.9.2 and earlier space is represented by the actual space character ' ', so check for both
     --print(key)
-    if (key == " " or key == "space" or key == "up") then
+    if (key == " " or key == "space") then
         shoot()
     end
     typedCommand = typedCommand .. key
@@ -124,6 +157,8 @@ function love.update(dt)
     end
 
     if not supremeCombo then
+        world:update(dt)
+
         typedTime = typedTime + dt
         if typedTime > 2 then
             typedTime = 0
@@ -133,11 +168,21 @@ function love.update(dt)
 
         -- keyboard actions for our hero
         if love.keyboard.isDown("left") then
-            hero.x = hero.x < 0 and 0 or hero.x - hero.speed * dt
+            --hero.x = hero.x < 0 and 0 or hero.x - hero.speed * dt
+            local geezersX = geezers.body:getX()
+            geezers.body:setX(geezersX < 0 and 0 or geezersX - hero.speed * dt)
             orientation = 'L'
         elseif love.keyboard.isDown("right") then
-            hero.x = hero.x > border and border or hero.x + hero.speed * dt
+            --hero.x = hero.x > border and border or hero.x + hero.speed * dt
+            local geezersX = geezers.body:getX()
+            geezers.body:setX(geezersX > border and border or geezersX + hero.speed * dt)
             orientation = 'R'
+        end
+        if jump then
+            geezers.body:setAwake(true)
+            geezers.body:setLinearVelocity(0, JUMP_LINEAR_VELOCITY)
+            isCollided = false
+            jump = false
         end
 
         local remEnemy = {}
@@ -176,7 +221,7 @@ function love.update(dt)
         -- update those evil enemies
         for i, v in ipairs(enemies) do
             -- let them fall down slowly
-            v.y = v.y + 0.4
+            v.y = v.y + dt
 
             -- check for collision with ground
             if v.y > 448 then
@@ -250,7 +295,7 @@ function love.draw()
 
     -- let's draw some ground
     love.graphics.setColor(0, 255, 0, 255)
-    love.graphics.rectangle("fill", 0, 465, WINDOW_WIDTH, 150)
+    love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH, 150)
 
     if not allOver then
         if not allClear or supremeCombo then
@@ -264,7 +309,7 @@ function love.draw()
                 else
                     player = playerImgL1
                 end
-                love.graphics.draw(player, hero.x, hero.y)
+                love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
 
                 -- let's draw our heros shots
                 love.graphics.setColor(255, 255, 255, 255)
@@ -275,7 +320,8 @@ function love.draw()
                 -- perform supreme animation
                 love.graphics.setColor(255, 255, 255, 255)
                 local player = animation[order]
-                love.graphics.draw(player, hero.x, hero.y)
+                --love.graphics.draw(player, hero.x, hero.y)
+                love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
 
                 -- display supreme banner
                 local _, enemy = next(enemies)
@@ -339,4 +385,26 @@ function CheckSupremeCombo(command)
             break
         end
     end
+end
+
+function beginContact(a, b, collision)
+    if a == ground.fixture then
+        print('ground')
+        isCollided = true
+    end
+    if b == geezers.fixture then
+        print('geezers')
+    end
+end
+
+function endContact(a, b, collision)
+
+end
+
+function preSolve(a, b, collision)
+
+end
+
+function postSolve(a, b, collision)
+
 end
