@@ -141,6 +141,8 @@ function love.load(arg)
     isPerformingAnimation = false
 
     timeWizard = FREAK_COEFFICIENT
+
+    hurt = false
 end
 
 function love.quit()
@@ -166,6 +168,10 @@ function love.keypressed(k)
 
     if k == 'up' and stunt == 1 then
         stunt = 0
+    end
+
+    if k == 'down' then
+        isPerformingAnimation = false
     end
 end
 
@@ -466,6 +472,9 @@ end
 function beginContact(a, b, collision)
     if a == ground.fixture then
         --print('ground')
+        if isPerformingAnimation and stunt == -1 then
+            hurt = true
+        end
         isCollided = true
         stunt = -1
         isPerformingAnimation = false
