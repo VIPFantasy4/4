@@ -486,12 +486,9 @@ function beginContact(a, b, collision)
         else
             isCollided = true
             stunt = -1
-            isPerformingAnimation = false
             hurt = nil
         end
-        --isCollided = true
-        --stunt = -1
-        --isPerformingAnimation = false
+        isPerformingAnimation = false
     end
     if b == geezers.fixture then
         --print('geezers')
