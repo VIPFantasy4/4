@@ -32,7 +32,15 @@ local FREAK_COEFFICIENT = .07
 local X_GRAVITY = 0
 local Y_GRAVITY = 3000
 
-local JUMP_LINEAR_VELOCITY = -500
+local JUMP_LINEAR_VELOCITY = -600
+local STUNT_LINEAR_VELOCITY = -300
+
+local JUMP_ANIMATION = {}
+local STUNT_ANIMATION = {}
+
+local ANIMATION = {}
+ANIMATION.JUMP = JUMP_ANIMATION
+ANIMATION.STUNT = STUNT_ANIMATION
 
 function love.load(arg)
     --if arg and arg[#arg] == "-debug" then
@@ -89,13 +97,33 @@ function love.load(arg)
     playerImgL3 = love.graphics.newImage('assets/geezers3_l3.png')
     playerImgL4 = love.graphics.newImage('assets/geezers4_l4.png')
 
+    playerImgR1Jump2 = love.graphics.newImage('assets/geezers1_r1_2.png')
+    playerImgR1Jump3 = love.graphics.newImage('assets/geezers1_r1_3.png')
+    playerImgR1Jump4 = love.graphics.newImage('assets/geezers1_r1_4.png')
+
+    playerImgL1Jump2 = love.graphics.newImage('assets/geezers1_l1_2.png')
+    playerImgL1Jump3 = love.graphics.newImage('assets/geezers1_l1_3.png')
+    playerImgL1Jump4 = love.graphics.newImage('assets/geezers1_l1_4.png')
+
+    playerImgR2Stunt1 = love.graphics.newImage('assets/geezers2_r2_stunt1.png')
+    playerImgR3Stunt2 = love.graphics.newImage('assets/geezers3_r3_stunt2.png')
+
+    playerImgL2Stunt1 = love.graphics.newImage('assets/geezers2_l2_stunt1.png')
+    playerImgL3Stunt2 = love.graphics.newImage('assets/geezers3_l3_stunt2.png')
+
     SUPREME_COMBO_ANIMATION.SUPREME_FUCK_R = { playerImgR1, playerImgR2, playerImgR3, playerImgR4 }
     SUPREME_COMBO_ANIMATION.SUPREME_FUCK_L = { playerImgL1, playerImgL2, playerImgL3, playerImgL4 }
+
+    JUMP_ANIMATION.JUMP_R = { playerImgR1Jump2, playerImgR1Jump3, playerImgR1Jump4, playerImgR1 }
+    JUMP_ANIMATION.JUMP_L = { playerImgL1Jump2, playerImgL1Jump3, playerImgL1Jump4, playerImgL1 }
+    STUNT_ANIMATION.STUNT_R = { playerImgR2Stunt1, playerImgR3Stunt2, playerImgR1Jump4 }
+    STUNT_ANIMATION.STUNT_L = { playerImgL2Stunt1, playerImgL3Stunt2, playerImgL1Jump4 }
 
     orientation = DEFAULT_ORIENTATION
     border = WINDOW_WIDTH - playerImgR1:getWidth()
 
     jump = false
+    stunt = 1
 
     quit = true
     allClear = false
@@ -110,7 +138,7 @@ function love.load(arg)
     step = 0
     performedTime = 0
     supremeCombo = false
-    isPerformingCombo = false
+    isPerformingAnimation = false
 
     timeWizard = FREAK_COEFFICIENT
 end
@@ -135,6 +163,10 @@ function love.keypressed(k)
     if k == 'up' and isCollided then
         jump = true
     end
+
+    if k == 'up' and stunt == 1 then
+        stunt = 0
+    end
 end
 
 function love.keyreleased(key)
@@ -144,7 +176,7 @@ function love.keyreleased(key)
         shoot()
     end
     typedCommand = typedCommand .. key
-    print(typedCommand)
+    --print(typedCommand)
 end
 
 function love.update(dt)
@@ -178,11 +210,37 @@ function love.update(dt)
             geezers.body:setX(geezersX > border and border or geezersX + hero.speed * dt)
             orientation = 'R'
         end
+
         if jump then
             geezers.body:setAwake(true)
             geezers.body:setLinearVelocity(0, JUMP_LINEAR_VELOCITY)
+
+            comboName = 'JUMP'
+            order = 0
+            isPerformingAnimation = true
             isCollided = false
+            stunt = 1
             jump = false
+        end
+        if stunt == 0 then
+            geezers.body:setLinearVelocity(0, STUNT_LINEAR_VELOCITY)
+
+            comboName = 'STUNT'
+            order = 0
+            isPerformingAnimation = true
+            stunt = -1
+        end
+
+        if isPerformingAnimation then
+            timeWizard = timeWizard + dt
+            if timeWizard > FREAK_COEFFICIENT then
+                timeWizard = timeWizard - FREAK_COEFFICIENT
+                order = order + 1
+            end
+        else
+            comboName = nil
+            order = 0
+            timeWizard = FREAK_COEFFICIENT
         end
 
         local remEnemy = {}
@@ -257,7 +315,7 @@ function love.update(dt)
                         step = 0
                         performedTime = 0
                         supremeCombo = false
-                        isPerformingCombo = false
+                        isPerformingAnimation = false
                         timeWizard = FREAK_COEFFICIENT
                         -- 暂时调试
                         allClear = true
@@ -305,14 +363,27 @@ function love.draw()
             if not supremeCombo then
                 -- let's draw our hero
                 love.graphics.setColor(255, 255, 255, 255)
-                --love.graphics.rectangle("fill", hero.x, hero.y, hero.width, hero.height)
-                local player
-                if orientation == 'R' then
-                    player = playerImgR1
+                if not isPerformingAnimation then
+                    --love.graphics.rectangle("fill", hero.x, hero.y, hero.width, hero.height)
+                    local player
+                    if orientation == 'R' then
+                        player = playerImgR1
+                    else
+                        player = playerImgL1
+                    end
+                    love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
                 else
-                    player = playerImgL1
+                    local animation = ANIMATION[comboName][comboName .. '_' .. orientation]
+                    local player
+                    if order < #animation * 2 - 1 then
+                        local index = order % #animation
+                        index = index == 0 and #animation or index
+                        player = animation[index]
+                    else
+                        player = animation[#animation - 1]
+                    end
+                    love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
                 end
-                love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
 
                 -- let's draw our heros shots
                 love.graphics.setColor(1, 0, 0)
@@ -384,6 +455,8 @@ function CheckSupremeCombo(command)
             comboName = v
             animation = SUPREME_COMBO_ANIMATION[v .. '_' .. orientation]
             banner = SUPREME_COMBO_BANNER[v]
+            order = 0
+            timeWizard = FREAK_COEFFICIENT
             supremeCombo = true
             break
         end
@@ -392,11 +465,13 @@ end
 
 function beginContact(a, b, collision)
     if a == ground.fixture then
-        print('ground')
+        --print('ground')
         isCollided = true
+        stunt = -1
+        isPerformingAnimation = false
     end
     if b == geezers.fixture then
-        print('geezers')
+        --print('geezers')
     end
 end
 
