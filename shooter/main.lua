@@ -485,7 +485,7 @@ function beginContact(a, b, collision)
             hurt = 1
         else
             isCollided = true
-            stunt = -1
+            stunt = nil
             hurt = nil
         end
         isPerformingAnimation = false
