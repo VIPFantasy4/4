@@ -116,8 +116,8 @@ function love.load(arg)
 
     JUMP_ANIMATION.JUMP_R = { playerImgR1Jump2, playerImgR1Jump3, playerImgR1Jump4, playerImgR1 }
     JUMP_ANIMATION.JUMP_L = { playerImgL1Jump2, playerImgL1Jump3, playerImgL1Jump4, playerImgL1 }
-    STUNT_ANIMATION.STUNT_R = { playerImgR2Stunt1, playerImgR3Stunt2, playerImgR1Jump4 }
-    STUNT_ANIMATION.STUNT_L = { playerImgL2Stunt1, playerImgL3Stunt2, playerImgL1Jump4 }
+    STUNT_ANIMATION.STUNT_R = { playerImgR1Jump4, playerImgR2Stunt1, playerImgR3Stunt2 }
+    STUNT_ANIMATION.STUNT_L = { playerImgL1Jump4, playerImgL2Stunt1, playerImgL3Stunt2 }
 
     orientation = DEFAULT_ORIENTATION
     border = WINDOW_WIDTH - playerImgR1:getWidth()
@@ -375,12 +375,12 @@ function love.draw()
                 else
                     local animation = ANIMATION[comboName][comboName .. '_' .. orientation]
                     local player
-                    if order < #animation * 2 - 1 then
+                    if order < #animation * 2 then
                         local index = order % #animation
                         index = index == 0 and #animation or index
                         player = animation[index]
                     else
-                        player = animation[#animation - 1]
+                        player = animation[#animation]
                     end
                     love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
                 end
