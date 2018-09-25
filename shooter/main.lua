@@ -34,6 +34,7 @@ local Y_GRAVITY = 3000
 
 local JUMP_LINEAR_VELOCITY = -600
 local STUNT_LINEAR_VELOCITY = -300
+local HURT_LINEAR_VELOCITY = -200
 
 local JUMP_ANIMATION = {}
 local STUNT_ANIMATION = {}
@@ -142,7 +143,7 @@ function love.load(arg)
 
     timeWizard = FREAK_COEFFICIENT
 
-    hurt = false
+    hurt = nil
 end
 
 function love.quit()
@@ -204,17 +205,25 @@ function love.update(dt)
             supremeCombo = false
         end
 
-        -- keyboard actions for our hero
-        if love.keyboard.isDown("left") then
-            --hero.x = hero.x < 0 and 0 or hero.x - hero.speed * dt
-            local geezersX = geezers.body:getX()
-            geezers.body:setX(geezersX < 0 and 0 or geezersX - hero.speed * dt)
-            orientation = 'L'
-        elseif love.keyboard.isDown("right") then
-            --hero.x = hero.x > border and border or hero.x + hero.speed * dt
-            local geezersX = geezers.body:getX()
-            geezers.body:setX(geezersX > border and border or geezersX + hero.speed * dt)
-            orientation = 'R'
+        if not hurt then
+            -- keyboard actions for our hero
+            if love.keyboard.isDown("left") then
+                --hero.x = hero.x < 0 and 0 or hero.x - hero.speed * dt
+                local geezersX = geezers.body:getX()
+                geezers.body:setX(geezersX < 0 and 0 or geezersX - hero.speed * dt)
+                orientation = 'L'
+            elseif love.keyboard.isDown("right") then
+                --hero.x = hero.x > border and border or hero.x + hero.speed * dt
+                local geezersX = geezers.body:getX()
+                geezers.body:setX(geezersX > border and border or geezersX + hero.speed * dt)
+                orientation = 'R'
+            end
+        else
+            if hurt == 1 then
+                geezers.body:setLinearVelocity(0, HURT_LINEAR_VELOCITY)
+
+                hurt = 0
+            end
         end
 
         if jump then
@@ -473,11 +482,16 @@ function beginContact(a, b, collision)
     if a == ground.fixture then
         --print('ground')
         if isPerformingAnimation and stunt == -1 then
-            hurt = true
+            hurt = 1
+        else
+            isCollided = true
+            stunt = -1
+            isPerformingAnimation = false
+            hurt = nil
         end
-        isCollided = true
-        stunt = -1
-        isPerformingAnimation = false
+        --isCollided = true
+        --stunt = -1
+        --isPerformingAnimation = false
     end
     if b == geezers.fixture then
         --print('geezers')
