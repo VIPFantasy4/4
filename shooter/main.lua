@@ -61,7 +61,7 @@ function love.load(arg)
 
     geezers = {}
     geezers.body = love.physics.newBody(world, 300, 0, 'dynamic')
-    geezers.shape = love.physics.newRectangleShape(148, FORTY_FOUR)
+    geezers.shape = love.physics.newRectangleShape(FORTY_FOUR, FORTY_FOUR)
     geezers.fixture = love.physics.newFixture(geezers.body, geezers.shape)
     geezers.fixture:setUserData('geezers')
 
@@ -266,7 +266,7 @@ function love.update(dt)
         -- update the shots
         for i, v in ipairs(hero.shots) do
             -- move them up up up
-            v.y = v.y - dt * 300
+            --v.y = v.y - dt * 300
 
             -- mark shots that are not visible for removal
             if v.y < 0 then
@@ -391,7 +391,7 @@ function love.draw()
                     else
                         player = playerImgL1
                     end
-                    love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
+                    love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
                 else
                     local animation = ANIMATION[comboName][comboName .. '_' .. orientation]
                     local player
@@ -402,20 +402,20 @@ function love.draw()
                     else
                         player = animation[#animation]
                     end
-                    love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
+                    love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
                 end
 
                 -- let's draw our heros shots
                 love.graphics.setColor(1, 0, 0)
                 for i, v in ipairs(hero.shots) do
-                    love.graphics.rectangle("fill", v.x, v.y, 148, FORTY_FOUR)
+                    love.graphics.rectangle("fill", v.x, v.y, FORTY_FOUR, FORTY_FOUR)
                 end
             else
                 -- perform supreme animation
                 love.graphics.setColor(255, 255, 255, 255)
                 local player = animation[order]
                 --love.graphics.draw(player, hero.x, hero.y)
-                love.graphics.draw(player, geezers.body:getX(), geezers.body:getY() - 80)
+                love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
 
                 -- display supreme banner
                 local _, enemy = next(enemies)
