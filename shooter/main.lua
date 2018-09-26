@@ -123,7 +123,8 @@ function love.load(arg)
     STUNT_ANIMATION.STUNT_L = { playerImgL1Jump4, playerImgL2Stunt1, playerImgL3Stunt2 }
 
     orientation = DEFAULT_ORIENTATION
-    border = WINDOW_WIDTH - playerImgR1:getWidth()
+    xBorder = (playerImgR1:getWidth() - FORTY_FOUR) / 2
+    yBorder = WINDOW_WIDTH - (playerImgR1:getWidth() + FORTY_FOUR) / 2
 
     jump = false
     stunt = 1
@@ -212,12 +213,12 @@ function love.update(dt)
             if love.keyboard.isDown("left") then
                 --hero.x = hero.x < 0 and 0 or hero.x - hero.speed * dt
                 local geezersX = geezers.body:getX()
-                geezers.body:setX(geezersX < 0 and 0 or geezersX - hero.speed * dt)
+                geezers.body:setX(geezersX < xBorder and xBorder or geezersX - hero.speed * dt)
                 orientation = 'L'
             elseif love.keyboard.isDown("right") then
-                --hero.x = hero.x > border and border or hero.x + hero.speed * dt
+                --hero.x = hero.x > yBorder and yBorder or hero.x + hero.speed * dt
                 local geezersX = geezers.body:getX()
-                geezers.body:setX(geezersX > border and border or geezersX + hero.speed * dt)
+                geezers.body:setX(geezersX > yBorder and yBorder or geezersX + hero.speed * dt)
                 orientation = 'R'
             end
         else
