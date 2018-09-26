@@ -88,6 +88,8 @@ function love.load(arg)
     myFont = love.graphics.newFont("assets/msyh.ttf", 16)
     love.graphics.setFont(myFont)
 
+    bloodBg = love.graphics.newImage('assets/blood_bg.png')
+
     playerImgR1 = love.graphics.newImage('assets/geezers1_r1.png')
     playerImgR2 = love.graphics.newImage('assets/geezers2_r2.png')
     playerImgR3 = love.graphics.newImage('assets/geezers3_r3.png')
@@ -163,7 +165,7 @@ function love.keypressed(k)
         love.event.push('quit') -- Quit the game.
     end
 
-    if k == 'up' and isCollided then
+    if k == 'up' and isCollided and not isPerformingAnimation then
         jump = true
     end
 
@@ -372,6 +374,9 @@ function love.draw()
     -- test position
     love.graphics.setColor(255, 255, 0, 255)
     love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH * 1000, FORTY_FOUR)
+    -- hurt notice
+    love.graphics.setColor(1, 0, 0)
+    love.graphics.print('头着地会掉血', ground.body:getX() + FORTY_FOUR, ground.body:getY(), 0, 7.4, 6)
 
     if not allOver then
         if not allClear or supremeCombo then
@@ -441,6 +446,11 @@ function love.draw()
         love.graphics.setColor(1, 0, 0)
         love.graphics.print("YOU LOSE!!!", 315, 100, 0, 2, 2)
         love.graphics.print("NOOB NIGGA", 300, 130, 0, 2, 2)
+    end
+
+    if hurt == 0 then
+        love.graphics.setColor(255, 255, 255, 255)
+        love.graphics.draw(bloodBg, 0, 0)
     end
 end
 
