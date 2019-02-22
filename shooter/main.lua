@@ -405,6 +405,7 @@ function love.draw()
                     else
                         player = playerImgL1
                     end
+                    --TODO: 做一个图片真正的对应物体
                     local _, _, _, _, _, y = geezers.body:getWorldPoints(geezers.shape:getPoints())
                     love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, y - player:getHeight() + 33)
                     love.graphics.setColor(1, 0, 0)
