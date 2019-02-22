@@ -35,6 +35,7 @@ local Y_GRAVITY = 3000
 local JUMP_LINEAR_VELOCITY = -600
 local STUNT_LINEAR_VELOCITY = -300
 local HURT_LINEAR_VELOCITY = -200
+local SHOOT_LINEAR_VELOCITY = -100
 
 local JUMP_ANIMATION = {}
 local STUNT_ANIMATION = {}
@@ -53,7 +54,7 @@ function love.load(arg)
     love.physics.setMeter(10)
 
     ground = {}
-    ground.body = love.physics.newBody(world, 0, 465)
+    ground.body = love.physics.newBody(world, WINDOW_WIDTH * 1000 / 2, 600 - FORTY_FOUR / 2)
     ground.shape = love.physics.newRectangleShape(WINDOW_WIDTH * 1000, FORTY_FOUR)
     ground.fixture = love.physics.newFixture(ground.body, ground.shape)
     ground.fixture:setRestitution(0)
@@ -61,7 +62,7 @@ function love.load(arg)
 
     geezers = {}
     geezers.body = love.physics.newBody(world, 300, 0, 'dynamic')
-    geezers.shape = love.physics.newRectangleShape(FORTY_FOUR, FORTY_FOUR)
+    geezers.shape = love.physics.newRectangleShape(FORTY_FOUR, FORTY_FOUR * 1.6)
     geezers.fixture = love.physics.newFixture(geezers.body, geezers.shape)
     geezers.fixture:setUserData('geezers')
 
@@ -78,10 +79,11 @@ function love.load(arg)
     enemies = {}
     for i = 0, 6 do
         local enemy = {}
-        enemy.width = 40
-        enemy.height = 20
-        enemy.x = i * (enemy.width + 60) + 80
-        enemy.y = enemy.height + 100
+        enemy.body = love.physics.newBody(world, i * (40 + 60) + 80 + 40 / 2, 20 + 100 + 20 / 2)
+        enemy.shape = love.physics.newRectangleShape(40, 20)
+        enemy.fixture = love.physics.newFixture(enemy.body, enemy.shape)
+        enemy.fixture:setRestitution(0)
+        enemy.fixture:setUserData('enemy')
         table.insert(enemies, enemy)
     end
 
@@ -113,6 +115,8 @@ function love.load(arg)
 
     playerImgL2Stunt1 = love.graphics.newImage('assets/geezers2_l2_stunt1.png')
     playerImgL3Stunt2 = love.graphics.newImage('assets/geezers3_l3_stunt2.png')
+
+    shotImg = love.graphics.newImage('assets/shot.png')
 
     SUPREME_COMBO_ANIMATION.SUPREME_FUCK_R = { playerImgR1, playerImgR2, playerImgR3, playerImgR4 }
     SUPREME_COMBO_ANIMATION.SUPREME_FUCK_L = { playerImgL1, playerImgL2, playerImgL3, playerImgL4 }
@@ -265,18 +269,22 @@ function love.update(dt)
         local remShot = {}
 
         -- update the shots
-        for i, v in ipairs(hero.shots) do
+        for i, shot in ipairs(hero.shots) do
             -- move them up up up
-            --v.y = v.y - dt * 300
+            shot.body:setAwake(true)
+            shot.body:setLinearVelocity(0, SHOOT_LINEAR_VELOCITY)
+            --shot.y = shot.y - dt * 300
 
             -- mark shots that are not visible for removal
-            if v.y < 0 then
+            local _, _, _, _, _, y = shot.body:getWorldPoints(shot.shape:getPoints())
+            if y < 0 then
                 table.insert(remShot, i)
             end
 
             -- check for collision with enemies
-            for ii, vv in ipairs(enemies) do
-                if CheckCollision(v.x, v.y, 2, 5, vv.x, vv.y, vv.width, vv.height) then
+            for ii, enemy in ipairs(enemies) do
+                if shot.body:isTouching(enemy.body) then
+                    --if CheckCollision(shot.x, shot.y, 2, 5, enemy.x, enemy.y, enemy.width, enemy.height) then
                     -- mark that enemy for removal
                     table.insert(remEnemy, ii)
                     -- mark the shot to be removed
@@ -286,21 +294,28 @@ function love.update(dt)
         end
 
         -- remove the marked enemies
-        for i, v in ipairs(remEnemy) do
-            table.remove(enemies, v)
+        for _, v in ipairs(remEnemy) do
+            v.fixture:release()
+            v.shape:release()
+            v.body:release()
         end
 
-        for i, v in ipairs(remShot) do
-            table.remove(hero.shots, v)
+        for _, v in ipairs(remShot) do
+            v.fixture:release()
+            v.shape:release()
+            v.body:release()
         end
 
         -- update those evil enemies
-        for i, v in ipairs(enemies) do
+        for i, enemy in ipairs(enemies) do
             -- let them fall down slowly
-            v.y = v.y + dt
+            --enemy.body:setAwake(true)
+            enemy.body:setLinearVelocity(0, dt)
+            --enemy.y = enemy.y + dt
 
             -- check for collision with ground
-            if v.y > 448 then
+            if enemy.body:isTouching(ground.body) then
+                --if enemy.y > 448 then
                 -- you loose!!!
                 allOver = true
             end
@@ -371,13 +386,11 @@ function love.draw()
 
     -- let's draw some ground
     love.graphics.setColor(0, 255, 0, 255)
-    love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH, 150)
-    -- test position
-    love.graphics.setColor(255, 255, 0, 255)
-    love.graphics.rectangle("fill", ground.body:getX(), ground.body:getY(), WINDOW_WIDTH * 1000, FORTY_FOUR)
+    love.graphics.polygon("fill", ground.body:getWorldPoints(ground.shape:getPoints()))
+
     -- hurt notice
     love.graphics.setColor(1, 0, 0)
-    love.graphics.print('头着地会掉血', ground.body:getX() + FORTY_FOUR, ground.body:getY(), 0, 7.4, 6)
+    love.graphics.print('头着地会掉血', FORTY_FOUR, FORTY_FOUR, 0, 7.4, 6)
 
     if not allOver then
         if not allClear or supremeCombo then
@@ -392,7 +405,10 @@ function love.draw()
                     else
                         player = playerImgL1
                     end
-                    love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
+                    local _, _, _, _, _, y = geezers.body:getWorldPoints(geezers.shape:getPoints())
+                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, y - player:getHeight() + 33)
+                    love.graphics.setColor(1, 0, 0)
+                    love.graphics.polygon("fill", geezers.body:getWorldPoints(geezers.shape:getPoints()))
                 else
                     local animation = ANIMATION[comboName][comboName .. '_' .. orientation]
                     local player
@@ -403,13 +419,17 @@ function love.draw()
                     else
                         player = animation[#animation]
                     end
-                    love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
+                    local _, _, _, _, _, y = geezers.body:getWorldPoints(geezers.shape:getPoints())
+                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, y - player:getHeight() + 33)
+                    love.graphics.setColor(1, 0, 0)
+                    love.graphics.polygon("fill", geezers.body:getWorldPoints(geezers.shape:getPoints()))
                 end
 
                 -- let's draw our heros shots
-                love.graphics.setColor(1, 0, 0)
-                for i, v in ipairs(hero.shots) do
-                    love.graphics.rectangle("fill", v.x, v.y, FORTY_FOUR, FORTY_FOUR)
+                love.graphics.setColor(255, 255, 255, 255)
+                for _, shot in ipairs(hero.shots) do
+                    love.graphics.draw(shotImg, shot.body:getX() - shotImg:getWidth() / 2, shot.body:getY() - shotImg:getHeight() / 2)
+                    --love.graphics.rectangle("fill", shot.x, shot.y, FORTY_FOUR, FORTY_FOUR)
                 end
             else
                 -- perform supreme animation
@@ -419,24 +439,25 @@ function love.draw()
                 love.graphics.draw(player, geezers.body:getX() - (player:getWidth() - FORTY_FOUR) / 2, geezers.body:getY() - 80)
 
                 -- display supreme banner
-                local _, enemy = next(enemies)
-                if enemy then
-                    local count = 0
-                    for i, v in ipairs(banner) do
-                        if count >= step then
-                            break
-                        end
-                        love.graphics.setColor(20, 200, 0, 255)
-                        love.graphics.print(v, (i - 1) * 100 + 80, enemy.y - 44, 0, 3, 3)
-                        count = count + 1
-                    end
-                end
+                --local _, enemy = next(enemies)
+                --if enemy then
+                --    local count = 0
+                --    for i, v in ipairs(banner) do
+                --        if count >= step then
+                --            break
+                --        end
+                --        love.graphics.setColor(20, 200, 0, 255)
+                --        love.graphics.print(v, (i - 1) * 100 + 80, enemy.y - 44, 0, 3, 3)
+                --        count = count + 1
+                --    end
+                --end
             end
 
             -- let's draw our enemies
             love.graphics.setColor(0, 255, 255, 255)
-            for i, v in ipairs(enemies) do
-                love.graphics.rectangle("fill", v.x, v.y, v.width, v.height)
+            for _, enemy in ipairs(enemies) do
+                love.graphics.polygon("fill", enemy.body:getWorldPoints(enemy.shape:getPoints()))
+                --love.graphics.rectangle("fill", enemy.x, enemy.y, enemy.width, enemy.height)
             end
         else
             love.graphics.setColor(0, 1, 0)
@@ -459,19 +480,29 @@ function shoot()
     --if #hero.shots >= 5 then
     --    return
     --end
-    local shot = {}
-    shot.x = geezers.body:getX()
-    shot.y = geezers.body:getY()
+    local shot = createShot(geezers.body:getX(), geezers.body:getY() - FORTY_FOUR, os.time())
+    --local shot = {}
+    --shot.x, shot.y = geezers.body:getWorldPoints(geezers.shape:getPoints())
     table.insert(hero.shots, shot)
+end
+
+function createShot(x, y, id)
+    local shot = {}
+    shot.body = love.physics.newBody(world, x, y)
+    shot.shape = love.physics.newRectangleShape(4, 4)
+    shot.fixture = love.physics.newFixture(shot.body, shot.shape)
+    shot.fixture:setRestitution(0)
+    shot.fixture:setUserData('shot_' .. id)
+    return shot
 end
 
 -- Collision detection function.
 -- Checks if a and b overlap.
 -- w and h mean width and height.
-function CheckCollision(ax1, ay1, aw, ah, bx1, by1, bw, bh)
-    local ax2, ay2, bx2, by2 = ax1 + aw, ay1 + ah, bx1 + bw, by1 + bh
-    return ax1 < bx2 and ax2 > bx1 and ay1 < by2 and ay2 > by1
-end
+--function CheckCollision(ax1, ay1, aw, ah, bx1, by1, bw, bh)
+--    local ax2, ay2, bx2, by2 = ax1 + aw, ay1 + ah, bx1 + bw, by1 + bh
+--    return ax1 < bx2 and ax2 > bx1 and ay1 < by2 and ay2 > by1
+--end
 
 function CheckSupremeCombo(command)
     local len = #command
