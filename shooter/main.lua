@@ -62,7 +62,8 @@ function love.load(arg)
 
     geezers = {}
     geezers.body = love.physics.newBody(world, 300, 0, 'dynamic')
-    geezers.shape = love.physics.newRectangleShape(FORTY_FOUR, FORTY_FOUR * 1.6)
+    --geezers.shape = love.physics.newRectangleShape(FORTY_FOUR, FORTY_FOUR * 1.6)
+    geezers.shape = love.physics.newCircleShape(FORTY_FOUR / 2)
     geezers.fixture = love.physics.newFixture(geezers.body, geezers.shape)
     geezers.fixture:setUserData('geezers')
 
@@ -405,11 +406,9 @@ function love.draw()
                     else
                         player = playerImgL1
                     end
-                    --TODO: 做一个图片真正的对应物体
-                    local _, _, _, _, _, y = geezers.body:getWorldPoints(geezers.shape:getPoints())
-                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, y - player:getHeight() + 33)
+                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, geezers.body:getY() + FORTY_FOUR - player:getHeight() + 33)
                     love.graphics.setColor(1, 0, 0)
-                    love.graphics.polygon("fill", geezers.body:getWorldPoints(geezers.shape:getPoints()))
+                    love.graphics.circle("fill", geezers.body:getX(), geezers.body:getY(), geezers.shape:getRadius())
                 else
                     local animation = ANIMATION[comboName][comboName .. '_' .. orientation]
                     local player
@@ -420,10 +419,9 @@ function love.draw()
                     else
                         player = animation[#animation]
                     end
-                    local _, _, _, _, _, y = geezers.body:getWorldPoints(geezers.shape:getPoints())
-                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, y - player:getHeight() + 33)
+                    love.graphics.draw(player, geezers.body:getX() - player:getWidth() / 2, geezers.body:getY() + FORTY_FOUR - player:getHeight() + 33)
                     love.graphics.setColor(1, 0, 0)
-                    love.graphics.polygon("fill", geezers.body:getWorldPoints(geezers.shape:getPoints()))
+                    love.graphics.circle("fill", geezers.body:getX(), geezers.body:getY(), geezers.shape:getRadius())
                 end
 
                 -- let's draw our heros shots
@@ -534,7 +532,8 @@ function beginContact(a, b, collision)
         isPerformingAnimation = false
     end
     if b == geezers.fixture then
-        --print('geezers')
+        print('geezers')
+        geezers.body:setAwake(false)
     end
 end
 
